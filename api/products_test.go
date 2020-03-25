@@ -1,6 +1,8 @@
 package api
 
 import (
+	"firstapi/db"
+	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -8,6 +10,11 @@ import (
 
 func TestGetAllProducts(t *testing.T) {
 	rr := httptest.NewRecorder()
+
+	database := db.InitDB()
+	defer database.Close()
+
+	productsController := NewProductsController(database)
 
 	handler := http.HandlerFunc(productsController.GetProductList)
 	req, err := http.NewRequest("GET", "/api/procucts", nil)

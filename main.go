@@ -8,7 +8,6 @@ import (
 	"firstapi/db"
 
 	"github.com/gorilla/mux"
-	_ "github.com/jinzhu/gorm/dialects/sqlite"
 )
 
 type Product struct {

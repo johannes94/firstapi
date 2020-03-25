@@ -16,8 +16,7 @@ func InitDB() *gorm.DB {
 	database, err := gorm.Open("sqlite3", "test.db")
 
 	if err != nil {
-		println(err)
-		panic("Failed to open the database connection")
+		panic(err)
 	}
 
 	database.AutoMigrate(&Product{})
