@@ -8,18 +8,19 @@ import (
 	"firstapi/db"
 
 	"github.com/gorilla/mux"
-	"github.com/jinzhu/gorm"
 )
 
-type productsController struct {
-	db *gorm.DB
+//ProductsController defines HTTP Handlers for Products
+type ProductsController struct {
+	productRepository db.ProductRepository
 }
 
-func NewProductsController(db *gorm.DB) *productsController {
-	return &productsController{db}
+//NewProductsController creates a new ProductsController with the DB set
+func NewProductsController(pr db.ProductRepository) ProductsController {
+	return ProductsController{pr}
 }
 
-func (pc productsController) CreateProduct(w http.ResponseWriter, r *http.Request) {
+func (pc ProductsController) CreateProduct(w http.ResponseWriter, r *http.Request) {
 
 	var newProduct db.Product
 	if err := json.NewDecoder(r.Body).Decode(&newProduct); err != nil {
@@ -35,13 +36,13 @@ func (pc productsController) CreateProduct(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if newProduct.Id != 0 {
+	if newProduct.ID != 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(w, "Product id will be set automatically, remove it from the Request Body")
 		return
 	}
 
-	if err := pc.db.Create(&newProduct).Error; err != nil {
+	if err := pc.productRepository.Create(&newProduct); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Internal error with storing the Product")
 		return
@@ -51,10 +52,10 @@ func (pc productsController) CreateProduct(w http.ResponseWriter, r *http.Reques
 	fmt.Fprintf(w, "Created")
 }
 
-func (pc productsController) GetProductList(w http.ResponseWriter, r *http.Request) {
-	var products []db.Product
+func (pc ProductsController) GetProductList(w http.ResponseWriter, r *http.Request) {
+	products, err := pc.productRepository.GetAll()
 
-	if err := pc.db.Find(&products).Error; err != nil {
+	if err != nil {
 		http.NotFound(w, r)
 		fmt.Println(err)
 		return
@@ -70,9 +71,8 @@ func (pc productsController) GetProductList(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-func (pc productsController) UpdateProduct(w http.ResponseWriter, r *http.Request) {
-	productId := mux.Vars(r)["id"]
-	var product db.Product
+func (pc ProductsController) UpdateProduct(w http.ResponseWriter, r *http.Request) {
+	productID := mux.Vars(r)["id"]
 
 	var newProduct db.Product
 	if err := json.NewDecoder(r.Body).Decode(&newProduct); err != nil {
@@ -82,7 +82,8 @@ func (pc productsController) UpdateProduct(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if err := pc.db.First(&product, productId).Error; err != nil {
+	product, err := pc.productRepository.GetByID(productID)
+	if err != nil {
 		if err.Error() == "record not found" {
 			http.NotFound(w, r)
 		} else {
@@ -95,7 +96,7 @@ func (pc productsController) UpdateProduct(w http.ResponseWriter, r *http.Reques
 	product.Name = newProduct.Name
 	product.Price = newProduct.Price
 
-	if err := pc.db.Save(product).Error; err != nil {
+	if err := pc.productRepository.Update(&product); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Internal error with storing the Product")
 		return
@@ -105,12 +106,13 @@ func (pc productsController) UpdateProduct(w http.ResponseWriter, r *http.Reques
 	fmt.Fprintf(w, "Updated")
 }
 
-func (pc productsController) GetProduct(w http.ResponseWriter, r *http.Request) {
+func (pc ProductsController) GetProduct(w http.ResponseWriter, r *http.Request) {
 
-	productId := mux.Vars(r)["id"]
-	var product db.Product
+	productID := mux.Vars(r)["id"]
 
-	if err := pc.db.First(&product, productId).Error; err != nil {
+	product, err := pc.productRepository.GetByID(productID)
+
+	if err != nil {
 		if err.Error() == "record not found" {
 			http.NotFound(w, r)
 		} else {
@@ -131,12 +133,12 @@ func (pc productsController) GetProduct(w http.ResponseWriter, r *http.Request) 
 
 }
 
-func (pc productsController) DeleteProduct(w http.ResponseWriter, r *http.Request) {
+func (pc ProductsController) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 
-	productId := mux.Vars(r)["id"]
-	var product db.Product
+	productID := mux.Vars(r)["id"]
 
-	if err := pc.db.First(&product, productId).Error; err != nil {
+	product, err := pc.productRepository.GetByID(productID)
+	if err != nil {
 		if err.Error() == "record not found" {
 			http.NotFound(w, r)
 		} else {
@@ -146,7 +148,7 @@ func (pc productsController) DeleteProduct(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if err := pc.db.Delete(&product).Error; err != nil {
+	if err := pc.productRepository.Delete(&product).Error; err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Internal error with deleting the Product")
 		return

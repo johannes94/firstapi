@@ -5,12 +5,12 @@ import (
 )
 
 type Product struct {
-	Id    uint    `json:"id" gorm:"primary_key,AUTO_INCREMENT"`
+	ID    uint    `json:"id" gorm:"primary_key,AUTO_INCREMENT"`
 	Name  *string `json:"name"`
 	Price *uint   `json:"price"`
 }
 
-var DB *gorm.DB
+var db *gorm.DB
 
 func InitDB() *gorm.DB {
 	database, err := gorm.Open("sqlite3", "test.db")
@@ -21,6 +21,6 @@ func InitDB() *gorm.DB {
 
 	database.AutoMigrate(&Product{})
 
-	DB = database
+	db = database
 	return database
 }

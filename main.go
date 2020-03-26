@@ -8,13 +8,8 @@ import (
 	"firstapi/db"
 
 	"github.com/gorilla/mux"
+	_ "github.com/jinzhu/gorm/dialects/sqlite"
 )
-
-type Product struct {
-	Id    uint    `json:"id" gorm:"primary_key,AUTO_INCREMENT"`
-	Name  *string `json:"name"`
-	Price *uint   `json:"price"`
-}
 
 func main() {
 	database := db.InitDB()
@@ -23,7 +18,8 @@ func main() {
 	router := mux.NewRouter()
 	apiRouter := router.PathPrefix("/api").Subrouter()
 
-	productsController := api.NewProductsController(database)
+	productRepo := db.NewGormProductRepository(database)
+	productsController := api.NewProductsController(productRepo)
 
 	apiRouter.HandleFunc("/products", productsController.GetProductList).Methods("GET")
 	apiRouter.HandleFunc("/products", productsController.CreateProduct).Methods("POST")
