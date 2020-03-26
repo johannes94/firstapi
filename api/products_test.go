@@ -1,25 +1,44 @@
 package api
 
 import (
+	"encoding/json"
 	"firstapi/db"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 )
 
+type mockProductRepository struct {
+	ExpectedForGetAll []db.Product
+}
+
+func (mp mockProductRepository) GetAll() ([]db.Product, error) {
+	return mp.ExpectedForGetAll, nil
+}
+func (mp mockProductRepository) GetByID(id string) (db.Product, error) {
+	return db.Product{}, nil
+}
+func (mp mockProductRepository) Create(product *db.Product) error {
+	return nil
+}
+func (mp mockProductRepository) Update(product *db.Product) error {
+	return nil
+}
+func (mp mockProductRepository) Delete(product *db.Product) error {
+	return nil
+}
+
 func TestGetAllProducts(t *testing.T) {
 	rr := httptest.NewRecorder()
 
-	database := db.InitDB()
-	defer func() {
-		database.Close()
-		os.Remove("test.db")
-	}()
+	productRepo := new(mockProductRepository)
+	productRepo.ExpectedForGetAll = []db.Product{
+		db.Product{Name: "test", ID: 1, Price: 5},
+		db.Product{Name: "test2", ID: 2, Price: 6},
+	}
 
-	productRepo := db.NewGormProductRepository(database)
 	productsController := ProductsController{productRepo}
 
 	handler := http.HandlerFunc(productsController.GetProductList)
@@ -35,11 +54,27 @@ func TestGetAllProducts(t *testing.T) {
 			status, http.StatusOK)
 	}
 
-	t.Log(rr.Body)
-	// Check the response body is what we expect.
-	// expected := `{"alive": true}`
-	// if rr.Body.String() != expected {
-	//     t.Errorf("handler returned unexpected body: got %v want %v",
-	//         rr.Body.String(), expected)
-	// }
+	var products []db.Product
+
+	if err := json.Unmarshal(rr.Body.Bytes(), &products); err != nil {
+		t.Errorf("failed to json decode return value got:\n%v", rr.Body.String())
+	}
+
+	if len(products) != len(productRepo.ExpectedForGetAll) {
+		t.Errorf("slice size is not equal")
+		t.Logf("Got: %v", products)
+		t.Logf("Want: %v", productRepo.ExpectedForGetAll)
+	}
+
+	products[0].Name = "super neuer name"
+	for index := range products {
+		expected := productRepo.ExpectedForGetAll[index]
+		actual := products[index]
+		if actual != expected {
+			t.Errorf("Product not equal")
+			t.Logf("Got: %v", actual)
+			t.Logf("Want: %v", expected)
+		}
+	}
+
 }

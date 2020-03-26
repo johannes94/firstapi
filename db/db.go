@@ -5,9 +5,9 @@ import (
 )
 
 type Product struct {
-	ID    uint    `json:"id" gorm:"primary_key,AUTO_INCREMENT"`
-	Name  *string `json:"name"`
-	Price *uint   `json:"price"`
+	ID    uint   `json:"id" gorm:"primary_key,AUTO_INCREMENT"`
+	Name  string `json:"name"`
+	Price uint   `json:"price"`
 }
 
 var db *gorm.DB

@@ -30,18 +30,6 @@ func (pc ProductsController) CreateProduct(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if newProduct.Name == nil || newProduct.Price == nil {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "Name or Price not specified in Request")
-		return
-	}
-
-	if newProduct.ID != 0 {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "Product id will be set automatically, remove it from the Request Body")
-		return
-	}
-
 	if err := pc.productRepository.Create(&newProduct); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Internal error with storing the Product")
